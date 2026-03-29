@@ -33,6 +33,8 @@ async function main() {
       price: 5000000,
       type: PropertyType.ROOM,
       status: PropertyStatus.AVAILABLE,
+      latitude: 10.77611,
+      longitude: 106.70111,
       images: [
         'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&q=80&w=1000',
         'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&q=80&w=1000',
@@ -45,6 +47,8 @@ async function main() {
       price: 15000000,
       type: PropertyType.HOUSE,
       status: PropertyStatus.AVAILABLE,
+      latitude: 10.84917,
+      longitude: 106.75372,
       images: [
         'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=1000',
       ],
@@ -56,6 +60,8 @@ async function main() {
       price: 2500000,
       type: PropertyType.ROOM,
       status: PropertyStatus.AVAILABLE,
+      latitude: 10.835,
+      longitude: 106.7525,
       images: [
         'https://images.unsplash.com/photo-1554995207-c18c203602cb?auto=format&fit=crop&q=80&w=1000',
       ],
