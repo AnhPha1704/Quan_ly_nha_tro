@@ -1,0 +1,55 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id         String     @id @default(cuid())
+  email      String     @unique
+  password   String
+  name       String?
+  role       Role       @default(TENANT)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  properties Property[]
+}
+
+model Property {
+  id          String          @id @default(cuid())
+  title       String
+  description String
+  address     String
+  price       Float
+  type        PropertyType    @default(ROOM)
+  status      PropertyStatus  @default(AVAILABLE)
+  landlordId  String
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  landlord    User            @relation(fields: [landlordId], references: [id])
+  images      PropertyImage[]
+}
+
+model PropertyImage {
+  id         String   @id @default(cuid())
+  url        String
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+}
+
+enum Role {
+  LANDLORD
+  TENANT
+}
+
+enum PropertyType {
+  ROOM
+  HOUSE
+}
+
+enum PropertyStatus {
+  AVAILABLE
+  RENTED
+}

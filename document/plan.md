@@ -1,0 +1,1 @@
+Đóng gói và triển khai ứng dụng quản lý nhà trọ bằng Docker: Viết một ứng dụng Web tra cứu và quản lý thông tin bất động sản/nhà trọ (ngôn ngữ lập trình nào cũng được vd:nodejs nextjs ...). Sinh viên phải đóng gói toàn bộ mã nguồn, Web server (Nginx) và Database thành các Container riêng biệt sử dụng Docker Compose.
