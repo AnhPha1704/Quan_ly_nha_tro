@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, Popup, Circle, useMap, useMapEvents } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
 
@@ -22,43 +22,89 @@ interface Property {
   price: number
 }
 
-function MapUpdater({ center }: { center: [number, number] }) {
+function MapController({ center }: { center: [number, number] }) {
   const map = useMap()
+  const isAutoCenterBlocked = React.useRef(false)
+
   useEffect(() => {
-    map.flyTo(center, 13)
+    // Ngắt tự động centering nếu người dùng đã tương tác với bản đồ
+    const blockAutoCenter = () => {
+      isAutoCenterBlocked.current = true
+    }
+
+    map.on('dragstart', blockAutoCenter)
+    map.on('zoomstart', blockAutoCenter)
+
+    return () => {
+      map.off('dragstart', blockAutoCenter)
+      map.off('zoomstart', blockAutoCenter)
+    }
+  }, [map])
+
+  useEffect(() => {
+    // Nếu tọa độ khác với mặc định (Việt Nam Center), thực hiện bay tới vị trí người dùng
+    if (!isAutoCenterBlocked.current && center[0] !== 16.0471) {
+      setTimeout(() => {
+        map.flyTo(center, 13, {
+          duration: 1.5,
+          easeLinearity: 0.5
+        })
+        isAutoCenterBlocked.current = true
+      }, 1000)
+    }
   }, [center, map])
+
   return null
 }
 
 function CustomZoomControls() {
   const map = useMap()
-  
+  const [isLocating, setIsLocating] = useState(false)
+
   const handleLocate = () => {
     if ("geolocation" in navigator) {
+      setIsLocating(true)
       navigator.geolocation.getCurrentPosition((position) => {
         const { latitude, longitude } = position.coords
-        map.flyTo([latitude, longitude], 15, { animate: true })
+        map.stop() // Dừng mọi hiệu ứng cũ
+        setTimeout(() => {
+          map.flyTo([latitude, longitude], 15, {
+            animate: true,
+            duration: 1.5
+          })
+          setIsLocating(false)
+        }, 100)
       }, (error) => {
         console.warn("Locate error:", error.message)
+        setIsLocating(false)
+      }, {
+        enableHighAccuracy: true,
+        timeout: 5000,
+        maximumAge: 0
       })
     }
   }
 
   return (
     <div className="absolute bottom-10 right-10 z-[1000] flex flex-col gap-3">
-      <button 
+      <button
         onClick={handleLocate}
-        className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-dark shadow-xl border border-slate-100 hover:bg-primary hover:text-dark transition-all active:scale-90 group"
+        disabled={isLocating}
+        className={`w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-dark shadow-xl border border-slate-100 hover:bg-primary hover:text-dark transition-all active:scale-90 group ${isLocating ? 'animate-pulse' : ''}`}
         title="Vị trí của tôi"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 group-hover:scale-110 transition-transform">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
-        </svg>
+        {isLocating ? (
+          <div className="w-5 h-5 border-2 border-dark/20 border-t-dark rounded-full animate-spin" />
+        ) : (
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 group-hover:scale-110 transition-transform">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
+          </svg>
+        )}
       </button>
 
       <div className="flex flex-col gap-1 bg-white rounded-2xl p-1 shadow-xl border border-slate-100 overflow-hidden">
-        <button 
+        <button
           onClick={() => map.zoomIn()}
           className="w-10 h-10 bg-white hover:bg-slate-50 rounded-xl flex items-center justify-center text-dark transition-all active:scale-90 font-black text-lg"
           title="Phóng to"
@@ -66,7 +112,7 @@ function CustomZoomControls() {
           +
         </button>
         <div className="h-[1px] bg-slate-100 mx-2" />
-        <button 
+        <button
           onClick={() => map.zoomOut()}
           className="w-10 h-10 bg-white hover:bg-slate-50 rounded-xl flex items-center justify-center text-dark transition-all active:scale-90 font-black text-lg"
           title="Thu nhỏ"
@@ -78,16 +124,25 @@ function CustomZoomControls() {
   )
 }
 
-export default function MapComponent({ 
-  properties, 
+function MapEvents({ setIsMoving }: { setIsMoving: (moving: boolean) => void }) {
+  useMapEvents({
+    movestart: () => setIsMoving(true),
+    moveend: () => setIsMoving(false),
+  })
+  return null
+}
+
+export default function MapComponent({
+  properties,
   userLocation,
-  radius = 5000 
-}: { 
-  properties: Property[], 
+  radius = 5000
+}: {
+  properties: Property[],
   userLocation: [number, number],
   radius?: number
 }) {
   const [mounted, setMounted] = useState(false)
+  const [isMoving, setIsMoving] = useState(false)
 
   useEffect(() => {
     setMounted(true)
@@ -97,9 +152,9 @@ export default function MapComponent({
 
   return (
     <div className="w-full h-full relative overflow-hidden shadow-inner">
-      <MapContainer 
-        center={userLocation} 
-        zoom={13} 
+      <MapContainer
+        center={userLocation}
+        zoom={6}
         scrollWheelZoom={true}
         zoomControl={false}
         className="w-full h-full z-10"
@@ -108,16 +163,19 @@ export default function MapComponent({
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
         />
-        
-        <MapUpdater center={userLocation} />
+
+        <MapController center={userLocation} />
         <CustomZoomControls />
+        <MapEvents setIsMoving={setIsMoving} />
 
         {/* User Location Marker & Search Circle */}
-        <Circle 
-          center={userLocation} 
-          radius={radius} 
-          pathOptions={{ fillColor: '#c3f832', color: '#c3f832', fillOpacity: 0.1, weight: 1 }} 
-        />
+        {!isMoving && (
+          <Circle
+            center={userLocation}
+            radius={radius}
+            pathOptions={{ fillColor: '#c3f832', color: '#c3f832', fillOpacity: 0.1, weight: 1 }}
+          />
+        )}
         <Marker position={userLocation}>
           <Popup>Vị trí của bạn</Popup>
         </Marker>

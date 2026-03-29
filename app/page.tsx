@@ -16,7 +16,7 @@ export default function Home() {
   const [properties, setProperties] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
-  const [userLocation, setUserLocation] = useState<[number, number]>([10.7761, 106.7011]) // Default: Quận 1, HCM
+  const [userLocation, setUserLocation] = useState<[number, number]>([16.0471, 108.2062]) // Vietnam Center
   const [radius, setRadius] = useState(5) // Default 5km
 
   // Get User Location
