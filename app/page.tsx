@@ -74,10 +74,6 @@ export default function Home() {
           <header className="p-6 pb-2 bg-white/80 backdrop-blur-md z-20">
             <div className="flex items-center justify-between mb-6">
               <h1 className="text-2xl font-black text-dark tracking-tighter italic">TroVN <span className="text-primary">.</span></h1>
-              <button className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-xl text-[10px] font-black border border-slate-100 uppercase tracking-widest text-dark hover:bg-slate-100 transition-colors">
-                <MapPinIcon className="h-3 w-3 text-primary" />
-                Vị trí của tôi
-              </button>
             </div>
 
             <div className="relative group">
