@@ -90,3 +90,16 @@ body {
     overflow: auto;
   }
 }
+
+/* Hide default leaflet controls */
+.leaflet-control-zoom {
+  display: none !important;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

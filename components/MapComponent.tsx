@@ -30,6 +30,54 @@ function MapUpdater({ center }: { center: [number, number] }) {
   return null
 }
 
+function CustomZoomControls() {
+  const map = useMap()
+  
+  const handleLocate = () => {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition((position) => {
+        const { latitude, longitude } = position.coords
+        map.flyTo([latitude, longitude], 15, { animate: true })
+      }, (error) => {
+        console.warn("Locate error:", error.message)
+      })
+    }
+  }
+
+  return (
+    <div className="absolute bottom-10 right-10 z-[1000] flex flex-col gap-3">
+      <button 
+        onClick={handleLocate}
+        className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-dark shadow-xl border border-slate-100 hover:bg-primary hover:text-dark transition-all active:scale-90 group"
+        title="Vị trí của tôi"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 group-hover:scale-110 transition-transform">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
+        </svg>
+      </button>
+
+      <div className="flex flex-col gap-1 bg-white rounded-2xl p-1 shadow-xl border border-slate-100 overflow-hidden">
+        <button 
+          onClick={() => map.zoomIn()}
+          className="w-10 h-10 bg-white hover:bg-slate-50 rounded-xl flex items-center justify-center text-dark transition-all active:scale-90 font-black text-lg"
+          title="Phóng to"
+        >
+          +
+        </button>
+        <div className="h-[1px] bg-slate-100 mx-2" />
+        <button 
+          onClick={() => map.zoomOut()}
+          className="w-10 h-10 bg-white hover:bg-slate-50 rounded-xl flex items-center justify-center text-dark transition-all active:scale-90 font-black text-lg"
+          title="Thu nhỏ"
+        >
+          −
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export default function MapComponent({ 
   properties, 
   userLocation,
@@ -53,6 +101,7 @@ export default function MapComponent({
         center={userLocation} 
         zoom={13} 
         scrollWheelZoom={true}
+        zoomControl={false}
         className="w-full h-full z-10"
       >
         <TileLayer
@@ -61,6 +110,7 @@ export default function MapComponent({
         />
         
         <MapUpdater center={userLocation} />
+        <CustomZoomControls />
 
         {/* User Location Marker & Search Circle */}
         <Circle 
