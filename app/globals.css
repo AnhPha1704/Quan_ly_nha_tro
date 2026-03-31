@@ -96,6 +96,86 @@ body {
   display: none !important;
 }
 
+/* Map Markers */
+.user-location-marker {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.user-location-dot {
+  width: 12px;
+  height: 12px;
+  background-color: #007bff;
+  border: 2px solid white;
+  border-radius: 50%;
+  box-shadow: 0 0 5px rgba(0,0,0,0.3);
+  position: absolute;
+  z-index: 2;
+}
+
+.user-location-pulse {
+  width: 30px;
+  height: 30px;
+  background-color: rgba(0, 123, 255, 0.4);
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+  display: block;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.5);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+
+.price-marker-wrapped {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.price-marker {
+  position: relative;
+  background: white;
+  border: 1px solid rgba(0,0,0,0.05);
+  border-radius: 12px;
+  padding: 4px 10px;
+  font-weight: 800;
+  font-size: 11px;
+  color: #292928;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+  white-space: nowrap;
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transform: translateY(-50%); /* Đưa tâm Marker lên trên để mũi nhọn trỏ vào đúng điểm */
+}
+
+.price-marker:hover {
+  background: #c3f832;
+  transform: scale(1.1) translateY(-2px);
+  z-index: 1000;
+}
+
+.price-marker::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 5px solid white;
+}
+
+.price-marker:hover::after {
+  border-top-color: #c3f832;
+}
+
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }

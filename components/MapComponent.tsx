@@ -14,6 +14,29 @@ const DefaultIcon = L.icon({
 })
 L.Marker.prototype.options.icon = DefaultIcon
 
+// Custom User Location Icon (Pulsating Blue Dot)
+const userLocationIcon = L.divIcon({
+  className: 'user-location-marker',
+  html: '<div class="user-location-pulse"></div><div class="user-location-dot"></div>',
+  iconSize: [30, 30],
+  iconAnchor: [15, 15],
+})
+
+// Function to create Price Tag Marker for properties
+const createPriceIcon = (price: number) => {
+  const formattedPrice = new Intl.NumberFormat('vi-VN', { 
+    notation: 'compact',
+    maximumFractionDigits: 1 
+  }).format(price).replace('TR', 'tr')
+
+  return L.divIcon({
+    className: 'price-marker-wrapped',
+    html: `<div class="price-marker">${formattedPrice}</div>`,
+    iconSize: [60, 30],
+    iconAnchor: [30, 15],
+  })
+}
+
 interface Property {
   id: string
   title: string
@@ -176,14 +199,18 @@ export default function MapComponent({
             pathOptions={{ fillColor: '#c3f832', color: '#c3f832', fillOpacity: 0.1, weight: 1 }}
           />
         )}
-        <Marker position={userLocation}>
+        <Marker position={userLocation} icon={userLocationIcon}>
           <Popup>Vị trí của bạn</Popup>
         </Marker>
 
         {/* Property Markers */}
         {properties.map((property) => (
           property.latitude && property.longitude && (
-            <Marker key={property.id} position={[property.latitude, property.longitude]}>
+            <Marker 
+              key={property.id} 
+              position={[property.latitude, property.longitude]}
+              icon={createPriceIcon(property.price)}
+            >
               <Popup>
                 <div className="p-1">
                   <h4 className="font-bold text-dark mb-1">{property.title}</h4>
