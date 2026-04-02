@@ -171,13 +171,15 @@ export default function MapComponent({
   userLocation,
   searchLocation,
   radius = 5000,
-  onMapClick
+  onMapClick,
+  onSelect
 }: {
   properties: Property[],
   userLocation: [number, number],
   searchLocation: [number, number],
   radius?: number,
-  onMapClick?: (lat: number, lng: number) => void
+  onMapClick?: (lat: number, lng: number) => void,
+  onSelect?: (property: Property) => void
 }) {
   const [mounted, setMounted] = useState(false)
   const [isMoving, setIsMoving] = useState(false)
@@ -237,6 +239,11 @@ export default function MapComponent({
               key={property.id} 
               position={[property.latitude, property.longitude]}
               icon={createPriceIcon(property.price)}
+              eventHandlers={{
+                click: () => {
+                  if (onSelect) onSelect(property)
+                }
+              }}
             >
               <Popup>
                 <div className="p-1">

@@ -4,12 +4,16 @@ import React, { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import Sidebar from '@/components/Sidebar'
 import PropertyGrid from '@/components/PropertyGrid'
-import { MagnifyingGlassIcon, MapPinIcon, AdjustmentsHorizontalIcon } from '@heroicons/react/24/outline'
+import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline'
 
 // Import Map component dynamically to avoid SSR errors with Leaflet
 const MapComponent = dynamic(() => import('@/components/MapComponent'), { 
   ssr: false,
   loading: () => <div className="w-full h-full bg-slate-100 animate-pulse rounded-l-[40px]" />
+})
+
+const PropertyDetail = dynamic(() => import('@/components/PropertyDetail'), {
+  ssr: false
 })
 
 export default function Home() {
@@ -19,6 +23,7 @@ export default function Home() {
   const [userLocation, setUserLocation] = useState<[number, number]>([16.0471, 108.2062]) // Actual GPS
   const [searchLocation, setSearchLocation] = useState<[number, number]>([16.0471, 108.2062]) // Search focal point
   const [radius, setRadius] = useState(5) // Default 5km
+  const [selectedProperty, setSelectedProperty] = useState<any | null>(null)
 
   // Get User Location
   useEffect(() => {
@@ -70,48 +75,66 @@ export default function Home() {
             searchLocation={searchLocation}
             radius={radius * 1000} 
             onMapClick={(lat, lng) => setSearchLocation([lat, lng])}
+            onSelect={(p) => setSelectedProperty(p)}
           />
         </div>
 
         {/* Floating List Card */}
-        <div className="absolute top-6 left-6 bottom-6 w-[440px] z-10 flex flex-col floating-card overflow-hidden">
-          {/* Header Inside Card */}
-          <header className="p-6 pb-2 bg-white/80 backdrop-blur-md z-20">
-            <div className="flex items-center justify-between mb-6">
-              <h1 className="text-2xl font-black text-dark tracking-tighter italic">TroVN <span className="text-primary">.</span></h1>
-            </div>
+        <div className={`absolute top-6 left-6 bottom-6 transition-all duration-500 ease-in-out z-10 flex floating-card overflow-hidden ${selectedProperty ? 'w-[950px]' : 'w-[400px]'}`}>
+          
+          {/* Master View (List) */}
+          <div className="w-[400px] flex-shrink-0 flex flex-col transition-all duration-500 bg-white border-r border-slate-50">
+            {/* Header Inside Card */}
+            <header className="p-6 pb-5 bg-white/90 backdrop-blur-xl z-20 border-b border-slate-50 sticky top-0">
+              <div className="flex items-center justify-between mb-6">
+                <h1 className="text-2xl font-black text-dark tracking-tighter italic">TroVN <span className="text-primary">.</span></h1>
+              </div>
 
-            <div className="relative group">
-              <MagnifyingGlassIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-primary transition-colors" />
-              <input 
-                type="text" 
-                placeholder="Tìm khu vực, tên phòng..." 
-                className="w-full h-12 pl-12 pr-4 bg-slate-50 border-2 border-transparent focus:border-primary/20 rounded-2xl outline-none font-bold text-dark placeholder:text-slate-300 transition-all text-sm"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+              <div className="relative group">
+                <MagnifyingGlassIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-primary transition-colors" />
+                <input 
+                  type="text" 
+                  placeholder="Tìm khu vực, tên phòng..." 
+                  className="w-full h-12 pl-12 pr-4 bg-slate-50 border-2 border-transparent focus:border-primary/20 rounded-2xl outline-none font-bold text-dark placeholder:text-slate-300 transition-all text-sm"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+
+              <div className="flex gap-2 mt-4 overflow-x-auto pb-1 no-scrollbar">
+                 <div className="flex-shrink-0 flex items-center gap-2 px-4 py-2 bg-dark text-primary rounded-full text-[10px] font-black uppercase tracking-widest cursor-pointer shadow-lg">
+                   Gần tôi
+                 </div>
+                 <div className="flex-shrink-0 flex items-center gap-2 px-4 py-2 bg-white border border-slate-100 text-slate-400 rounded-full text-[10px] font-black uppercase tracking-widest cursor-pointer hover:border-slate-300 transition-colors">
+                   Giá rẻ
+                 </div>
+                 <div className="flex-shrink-0 flex items-center gap-2 px-4 py-2 bg-white border border-slate-100 text-slate-400 rounded-full text-[10px] font-black uppercase tracking-widest cursor-pointer hover:border-slate-300 transition-colors">
+                   Phòng mới
+                 </div>
+              </div>
+            </header>
+
+            {/* Scrollable list */}
+            <div className="flex-grow overflow-y-auto no-scrollbar">
+              <PropertyGrid 
+                properties={properties} 
+                loading={loading} 
+                onSelect={(p) => setSelectedProperty(p)}
+                selectedId={selectedProperty?.id}
+                isCompact={true}
               />
             </div>
-
-            <div className="flex gap-2 mt-4 overflow-x-auto pb-2 no-scrollbar">
-               <div className="flex-shrink-0 flex items-center gap-2 px-4 py-2 bg-dark text-primary rounded-xl text-[10px] font-black uppercase tracking-widest cursor-pointer shadow-lg">
-                 Gần tôi
-               </div>
-               <div className="flex-shrink-0 flex items-center gap-2 px-4 py-2 bg-white border border-slate-100 text-slate-400 rounded-xl text-[10px] font-black uppercase tracking-widest cursor-pointer hover:border-slate-300 transition-colors">
-                 Giá rẻ
-               </div>
-               <div className="flex-shrink-0 flex items-center gap-2 px-4 py-2 bg-white border border-slate-100 text-slate-400 rounded-xl text-[10px] font-black uppercase tracking-widest cursor-pointer hover:border-slate-300 transition-colors">
-                 Phòng mới
-               </div>
-               <button className="ml-auto w-8 h-8 flex-shrink-0 bg-white border border-slate-100 rounded-lg flex items-center justify-center text-slate-400 hover:text-dark">
-                 <AdjustmentsHorizontalIcon className="h-4 w-4" />
-               </button>
-            </div>
-          </header>
-
-          {/* Scrollable list */}
-          <div className="flex-grow overflow-y-auto no-scrollbar bg-white">
-            <PropertyGrid properties={properties} loading={loading} />
           </div>
+
+          {/* Detail View */}
+          {selectedProperty && (
+            <div className="flex-grow h-full bg-white overflow-hidden">
+               <PropertyDetail 
+                property={selectedProperty} 
+                onClose={() => setSelectedProperty(null)} 
+               />
+            </div>
+          )}
         </div>
       </div>
     </main>
