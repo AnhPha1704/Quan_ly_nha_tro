@@ -6,45 +6,49 @@ import Sidebar from '@/components/Sidebar'
 import PropertyGrid from '@/components/PropertyGrid'
 import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline'
 
-// Import Map component dynamically to avoid SSR errors with Leaflet
+import PropertyDetailSkeleton from '@/components/PropertyDetailSkeleton'
+
 const MapComponent = dynamic(() => import('@/components/MapComponent'), { 
   ssr: false,
   loading: () => <div className="w-full h-full bg-slate-100 animate-pulse rounded-l-[40px]" />
 })
 
 const PropertyDetail = dynamic(() => import('@/components/PropertyDetail'), {
-  ssr: false
+  ssr: false,
+  loading: () => <PropertyDetailSkeleton />
 })
 
 export default function Home() {
   const [properties, setProperties] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [isLocatingGps, setIsLocatingGps] = useState(true) // New state to wait for GPS
   const [searchQuery, setSearchQuery] = useState('')
-  const [userLocation, setUserLocation] = useState<[number, number]>([16.0471, 108.2062]) // Actual GPS
-  const [searchLocation, setSearchLocation] = useState<[number, number]>([16.0471, 108.2062]) // Search focal point
-  const [radius, setRadius] = useState(5) // Default 5km
+  const [userLocation, setUserLocation] = useState<[number, number]>([16.0471, 108.2062]) 
+  const [searchLocation, setSearchLocation] = useState<[number, number]>([16.0471, 108.2062]) 
+  const [radius, setRadius] = useState(5) 
   const [selectedProperty, setSelectedProperty] = useState<any | null>(null)
 
-  // Get User Location
+  // 1. Get User Location First
   useEffect(() => {
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition((position) => {
         const coords: [number, number] = [position.coords.latitude, position.coords.longitude]
         setUserLocation(coords)
-        setSearchLocation(coords) // Sync search with real location on load
+        setSearchLocation(coords)
+        setIsLocatingGps(false) // GPS mapping done
       }, (error) => {
-        let message = "Không thể lấy vị trí mặc dù trình duyệt hỗ trợ."
-        if (error.code === error.PERMISSION_DENIED) message = "Bạn đã chặn quyền truy cập vị trí."
-        if (error.code === error.POSITION_UNAVAILABLE) message = "Thông tin vị trí không khả dụng."
-        if (error.code === error.TIMEOUT) message = "Yêu cầu lấy vị trí hết thời gian chờ."
-        console.warn("Geolocation Warning:", message)
-        // Dùng vị trí mặc định (Đà Nẵng) nếu lỗi
+        console.warn("Geolocation Error:", error.message)
+        setIsLocatingGps(false) // Proceed with default even if error
       })
+    } else {
+      setIsLocatingGps(false) // No GPS support, proceed with default
     }
   }, [])
 
-  // Fetch Properties based on search location and radius
+  // 2. Fetch Properties only after GPS is handled
   useEffect(() => {
+    if (isLocatingGps) return // Don't fetch yet!
+
     const fetchProperties = async () => {
       setLoading(true)
       try {
@@ -55,12 +59,12 @@ export default function Home() {
       } catch (error) {
         console.error('Failed to fetch properties:', error)
       } finally {
-        setLoading(false)
+        setTimeout(() => setLoading(false), 500) // Added a tiny extra delay for smoothness
       }
     }
 
     fetchProperties()
-  }, [searchLocation, radius, searchQuery])
+  }, [searchLocation, radius, searchQuery, isLocatingGps])
 
   return (
     <main className="main-layout font-sans">
