@@ -16,31 +16,34 @@ export default function Home() {
   const [properties, setProperties] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
-  const [userLocation, setUserLocation] = useState<[number, number]>([16.0471, 108.2062]) // Vietnam Center
+  const [userLocation, setUserLocation] = useState<[number, number]>([16.0471, 108.2062]) // Actual GPS
+  const [searchLocation, setSearchLocation] = useState<[number, number]>([16.0471, 108.2062]) // Search focal point
   const [radius, setRadius] = useState(5) // Default 5km
 
   // Get User Location
   useEffect(() => {
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition((position) => {
-        setUserLocation([position.coords.latitude, position.coords.longitude])
+        const coords: [number, number] = [position.coords.latitude, position.coords.longitude]
+        setUserLocation(coords)
+        setSearchLocation(coords) // Sync search with real location on load
       }, (error) => {
         let message = "Không thể lấy vị trí mặc dù trình duyệt hỗ trợ."
         if (error.code === error.PERMISSION_DENIED) message = "Bạn đã chặn quyền truy cập vị trí."
         if (error.code === error.POSITION_UNAVAILABLE) message = "Thông tin vị trí không khả dụng."
         if (error.code === error.TIMEOUT) message = "Yêu cầu lấy vị trí hết thời gian chờ."
         console.warn("Geolocation Warning:", message)
-        // Dùng vị trí mặc định (Quận 1) nếu lỗi
+        // Dùng vị trí mặc định (Đà Nẵng) nếu lỗi
       })
     }
   }, [])
 
-  // Fetch Properties based on location and radius
+  // Fetch Properties based on search location and radius
   useEffect(() => {
     const fetchProperties = async () => {
       setLoading(true)
       try {
-        const url = `/api/properties?lat=${userLocation[0]}&lng=${userLocation[1]}&radius=${radius}&q=${searchQuery}`
+        const url = `/api/properties?lat=${searchLocation[0]}&lng=${searchLocation[1]}&radius=${radius}&q=${searchQuery}`
         const res = await fetch(url)
         const data = await res.json()
         setProperties(Array.isArray(data) ? data : [])
@@ -52,7 +55,7 @@ export default function Home() {
     }
 
     fetchProperties()
-  }, [userLocation, radius, searchQuery])
+  }, [searchLocation, radius, searchQuery])
 
   return (
     <main className="main-layout font-sans">
@@ -64,7 +67,9 @@ export default function Home() {
           <MapComponent 
             properties={properties} 
             userLocation={userLocation} 
+            searchLocation={searchLocation}
             radius={radius * 1000} 
+            onMapClick={(lat, lng) => setSearchLocation([lat, lng])}
           />
         </div>
 

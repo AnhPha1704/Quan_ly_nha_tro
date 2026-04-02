@@ -80,7 +80,7 @@ function MapController({ center }: { center: [number, number] }) {
   return null
 }
 
-function CustomZoomControls() {
+function CustomZoomControls({ onLocate }: { onLocate?: (lat: number, lng: number) => void }) {
   const map = useMap()
   const [isLocating, setIsLocating] = useState(false)
 
@@ -89,6 +89,12 @@ function CustomZoomControls() {
       setIsLocating(true)
       navigator.geolocation.getCurrentPosition((position) => {
         const { latitude, longitude } = position.coords
+        
+        // Cập nhật tâm điểm tìm kiếm ở component cha
+        if (onLocate) {
+          onLocate(latitude, longitude)
+        }
+
         map.stop() // Dừng mọi hiệu ứng cũ
         setTimeout(() => {
           map.flyTo([latitude, longitude], 15, {
@@ -147,10 +153,15 @@ function CustomZoomControls() {
   )
 }
 
-function MapEvents({ setIsMoving }: { setIsMoving: (moving: boolean) => void }) {
+function MapEvents({ setIsMoving, onMapClick }: { setIsMoving: (moving: boolean) => void, onMapClick?: (lat: number, lng: number) => void }) {
   useMapEvents({
     movestart: () => setIsMoving(true),
     moveend: () => setIsMoving(false),
+    click: (e) => {
+      if (onMapClick) {
+        onMapClick(e.latlng.lat, e.latlng.lng)
+      }
+    }
   })
   return null
 }
@@ -158,11 +169,15 @@ function MapEvents({ setIsMoving }: { setIsMoving: (moving: boolean) => void }) 
 export default function MapComponent({
   properties,
   userLocation,
-  radius = 5000
+  searchLocation,
+  radius = 5000,
+  onMapClick
 }: {
   properties: Property[],
   userLocation: [number, number],
-  radius?: number
+  searchLocation: [number, number],
+  radius?: number,
+  onMapClick?: (lat: number, lng: number) => void
 }) {
   const [mounted, setMounted] = useState(false)
   const [isMoving, setIsMoving] = useState(false)
@@ -187,20 +202,32 @@ export default function MapComponent({
           url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
         />
 
-        <MapController center={userLocation} />
-        <CustomZoomControls />
-        <MapEvents setIsMoving={setIsMoving} />
+        <MapController center={searchLocation} />
+        <CustomZoomControls onLocate={onMapClick} />
+        <MapEvents setIsMoving={setIsMoving} onMapClick={onMapClick} />
 
         {/* User Location Marker & Search Circle */}
         {!isMoving && (
           <Circle
-            center={userLocation}
+            center={searchLocation}
             radius={radius}
             pathOptions={{ fillColor: '#c3f832', color: '#c3f832', fillOpacity: 0.1, weight: 1 }}
           />
         )}
-        <Marker position={userLocation} icon={userLocationIcon}>
-          <Popup>Vị trí của bạn</Popup>
+        <Marker 
+          position={userLocation} 
+          icon={userLocationIcon}
+          eventHandlers={{
+            click: (e) => {
+              if (onMapClick) {
+                onMapClick(userLocation[0], userLocation[1])
+              }
+              // Prevent the map click event from firing too
+              L.DomEvent.stopPropagation(e)
+            }
+          }}
+        >
+          <Popup>Vị trí của bạn (Nhấn để tìm quanh đây)</Popup>
         </Marker>
 
         {/* Property Markers */}
