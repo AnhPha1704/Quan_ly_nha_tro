@@ -42,22 +42,26 @@ export default function PropertyCard({ property, isCompact, isSelected, onClick 
         />
       </div>
 
-      {/* Content Section - Minimalist */}
-      <div className="flex-grow flex flex-col min-w-0">
-        <div className="flex justify-between items-start gap-4 mb-3">
-          <h3 className="text-lg font-black text-dark leading-tight line-clamp-2 flex-1 min-w-0 group-hover:text-primary transition-colors">
+      {/* Content Section - Flexible container */}
+      <div className="flex-grow flex flex-col gap-3 min-w-0">
+        <div className="flex justify-between items-start gap-2">
+          <h3 className="font-black text-dark text-lg leading-tight tracking-tighter truncate italic">
             {property.title}
           </h3>
-          <div className="text-right flex-shrink-0">
-            <span className="text-lg font-black text-dark block leading-none">{formattedPrice}</span>
+          <div className="flex flex-col items-end flex-shrink-0">
+            <span className="text-sm font-black text-dark leading-none">
+              {property.price / 1000000} Tr
+            </span>
           </div>
         </div>
         
-        {/* Address Pill - Simplified address without City */}
-        <div className="flex items-center gap-1.5 text-[#5c728d] font-bold bg-[#f4f8fb] w-fit px-4 py-2 rounded-full border border-slate-100/50">
-          <MapPinIcon className="h-3.5 w-3.5 text-[#a0aec0]" />
-          <span className="text-[11px] truncate max-w-[180px]">
-            {property.address.split(',').slice(0, -1).join(',')}
+        {/* Address Pill - Simplified address with Max Width Constraint */}
+        <div className="flex items-center gap-1.5 text-[#5c728d] font-bold bg-[#f4f8fb] w-fit max-w-full px-3 py-1.5 rounded-full border border-slate-100/50">
+          <MapPinIcon className="h-3 w-3 text-[#a0aec0] flex-shrink-0" />
+          <span className="text-[10px] truncate">
+            {property.address.split(',').length > 1 
+              ? property.address.split(',').slice(0, -1).join(',') 
+              : property.address}
           </span>
         </div>
       </div>
