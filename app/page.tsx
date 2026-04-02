@@ -21,10 +21,11 @@ const PropertyDetail = dynamic(() => import('@/components/PropertyDetail'), {
 export default function Home() {
   const [properties, setProperties] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [isLocatingGps, setIsLocatingGps] = useState(true) // New state to wait for GPS
+  const [isLocatingGps, setIsLocatingGps] = useState(true) 
   const [searchQuery, setSearchQuery] = useState('')
   const [userLocation, setUserLocation] = useState<[number, number]>([16.0471, 108.2062]) 
   const [searchLocation, setSearchLocation] = useState<[number, number]>([16.0471, 108.2062]) 
+  const [currentLocationName, setCurrentLocationName] = useState('Đà Nẵng') // Real-time location name
   const [radius, setRadius] = useState(5) 
   const [selectedProperty, setSelectedProperty] = useState<any | null>(null)
 
@@ -35,19 +36,40 @@ export default function Home() {
         const coords: [number, number] = [position.coords.latitude, position.coords.longitude]
         setUserLocation(coords)
         setSearchLocation(coords)
-        setIsLocatingGps(false) // GPS mapping done
+        setIsLocatingGps(false)
       }, (error) => {
         console.warn("Geolocation Error:", error.message)
-        setIsLocatingGps(false) // Proceed with default even if error
+        setIsLocatingGps(false)
       })
     } else {
-      setIsLocatingGps(false) // No GPS support, proceed with default
+      setIsLocatingGps(false)
     }
   }, [])
 
+  // 1.5. Reverse Geocoding for display name
+  useEffect(() => {
+     const fetchAddress = async () => {
+       try {
+         const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${searchLocation[0]}&lon=${searchLocation[1]}`)
+         const data = await response.json()
+         if (data && data.address) {
+           const addr = data.address
+           const name = addr.suburb || addr.town || addr.city || addr.quarter || addr.suburb || addr.village || 'Khu vực tìm kiếm'
+           setCurrentLocationName(name)
+         }
+       } catch (err) {
+         console.warn("Reverse Geocoding Failed:", err)
+       }
+     }
+     
+     if (!isLocatingGps) {
+       fetchAddress()
+     }
+  }, [searchLocation, isLocatingGps])
+
   // 2. Fetch Properties only after GPS is handled
   useEffect(() => {
-    if (isLocatingGps) return // Don't fetch yet!
+    if (isLocatingGps) return 
 
     const fetchProperties = async () => {
       setLoading(true)
@@ -123,6 +145,7 @@ export default function Home() {
               <PropertyGrid 
                 properties={properties} 
                 loading={loading} 
+                locationName={currentLocationName}
                 onSelect={(p) => setSelectedProperty(p)}
                 selectedId={selectedProperty?.id}
                 isCompact={true}

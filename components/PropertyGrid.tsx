@@ -6,12 +6,13 @@ import PropertyCard from './PropertyCard'
 interface PropertyGridProps {
   properties: any[]
   loading: boolean
+  locationName?: string
   onSelect?: (property: any) => void
   selectedId?: string
   isCompact?: boolean
 }
 
-export default function PropertyGrid({ properties, loading, onSelect, selectedId, isCompact }: PropertyGridProps) {
+export default function PropertyGrid({ properties, loading, locationName, onSelect, selectedId, isCompact }: PropertyGridProps) {
   if (loading) {
     return (
       <div className="flex flex-col gap-4 p-4">
@@ -46,7 +47,7 @@ export default function PropertyGrid({ properties, loading, onSelect, selectedId
       <div className="flex justify-between items-end mb-2 px-2">
         <div className="space-y-1">
           <h2 className={`${isCompact ? 'text-lg' : 'text-2xl'} font-black text-dark tracking-tighter italic`}>
-            Khu vực tìm kiếm <span className="text-primary">.</span>
+            {locationName || 'Khu vực tìm kiếm'} <span className="text-primary">.</span>
           </h2>
           <div className="flex items-center gap-2 px-3 py-1 bg-slate-50 w-fit rounded-full border border-slate-100 shadow-sm">
             <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
