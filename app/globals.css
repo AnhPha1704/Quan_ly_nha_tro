@@ -148,10 +148,14 @@ body {
   transform: translateY(-50%); /* Đưa tâm Marker lên trên để mũi nhọn trỏ vào đúng điểm */
 }
 
-.price-marker:hover {
-  background: #c3f832;
-  transform: scale(1.1) translateY(-2px);
+.price-marker:hover, .price-marker.active {
+  background: #292928;
+  color: #c3f832;
+  transform: scale(1.15) translateY(-5px);
   z-index: 1000;
+  border-color: #c3f832;
+  box-shadow: 0 10px 25px rgba(195, 248, 50, 0.3);
+  animation: marker-bounce 0.5s ease-out;
 }
 
 .price-marker::after {
@@ -165,8 +169,13 @@ body {
   border-top: 5px solid white;
 }
 
-.price-marker:hover::after {
-  border-top-color: #c3f832;
+.price-marker:hover::after, .price-marker.active::after {
+  border-top-color: #292928;
+}
+
+@keyframes marker-bounce {
+  0%, 100% { transform: scale(1.15) translateY(-5px); }
+  50% { transform: scale(1.15) translateY(-15px); }
 }
 
 .no-scrollbar::-webkit-scrollbar {

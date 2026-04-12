@@ -23,15 +23,31 @@ const userLocationIcon = L.divIcon({
 })
 
 // Function to create Price Tag Marker for properties
-const createPriceIcon = (price: number) => {
+const createPriceIcon = (price: number, isActive: boolean = false) => {
   const formattedPrice = new Intl.NumberFormat('vi-VN', { 
     notation: 'compact',
     maximumFractionDigits: 1 
   }).format(price).replace('TR', 'tr')
 
+  const baseStyle = `
+    position:relative;
+    background:${isActive ? '#292928' : 'white'};
+    color:${isActive ? '#c3f832' : '#292928'};
+    border:1px solid ${isActive ? '#c3f832' : 'rgba(0,0,0,0.05)'};
+    border-radius:12px;
+    padding:4px 10px;
+    font-weight:800;
+    font-size:11px;
+    box-shadow:${isActive ? '0 10px 25px rgba(195,248,50,0.35)' : '0 4px 12px rgba(0,0,0,0.12)'};
+    white-space:nowrap;
+    transform:${isActive ? 'scale(1.2) translateY(-10px)' : 'translateY(-50%)'};
+    transition:all 0.2s ease;
+    z-index:${isActive ? 1000 : 1};
+  `
+
   return L.divIcon({
     className: 'price-marker-wrapped',
-    html: `<div class="price-marker">${formattedPrice}</div>`,
+    html: `<div style="${baseStyle}">${formattedPrice}</div>`,
     iconSize: [60, 30],
     iconAnchor: [30, 15],
   })
@@ -45,37 +61,37 @@ interface Property {
   price: number
 }
 
-function MapController({ center }: { center: [number, number] }) {
+function MapController({ flyTarget, hasDetailPanel, onFlyStart, onFlyEnd }: { 
+  flyTarget: [number, number] | null,
+  hasDetailPanel: boolean,
+  onFlyStart: () => void, 
+  onFlyEnd: () => void 
+}) {
   const map = useMap()
-  const isAutoCenterBlocked = React.useRef(false)
 
   useEffect(() => {
-    // Ngắt tự động centering nếu người dùng đã tương tác với bản đồ
-    const blockAutoCenter = () => {
-      isAutoCenterBlocked.current = true
-    }
-
-    map.on('dragstart', blockAutoCenter)
-    map.on('zoomstart', blockAutoCenter)
-
+    map.on('movestart', onFlyStart)
+    map.on('moveend', onFlyEnd)
     return () => {
-      map.off('dragstart', blockAutoCenter)
-      map.off('zoomstart', blockAutoCenter)
+      map.off('movestart', onFlyStart)
+      map.off('moveend', onFlyEnd)
     }
-  }, [map])
+  }, [map, onFlyStart, onFlyEnd])
 
   useEffect(() => {
-    // Nếu tọa độ khác với mặc định (Việt Nam Center), thực hiện bay tới vị trí người dùng
-    if (!isAutoCenterBlocked.current && center[0] !== 16.0471) {
-      setTimeout(() => {
-        map.flyTo(center, 13, {
-          duration: 1.5,
-          easeLinearity: 0.5
-        })
-        isAutoCenterBlocked.current = true
-      }, 1000)
+    if (!flyTarget) return
+    onFlyStart()
+    const targetZoom = 15
+
+    if (hasDetailPanel) {
+      const targetPx = map.project(flyTarget, targetZoom)
+      const offsetPx = L.point(targetPx.x - 475, targetPx.y)
+      const offsetLatLng = map.unproject(offsetPx, targetZoom)
+      map.flyTo(offsetLatLng, targetZoom, { duration: 1.5, easeLinearity: 0.5 })
+    } else {
+      map.flyTo(flyTarget, targetZoom, { duration: 1.5, easeLinearity: 0.5 })
     }
-  }, [center, map])
+  }, [flyTarget])
 
   return null
 }
@@ -184,21 +200,29 @@ export default function MapComponent({
   properties,
   userLocation,
   searchLocation,
+  flyTarget = null,
   radius = 5000,
   isSearchingAll = false,
+  highlightedId = null,
+  hasDetailPanel = false,
   onMapClick,
   onSelect
 }: {
   properties: Property[],
   userLocation: [number, number],
   searchLocation: [number, number],
+  flyTarget?: [number, number] | null,
   radius?: number,
   isSearchingAll?: boolean,
+  highlightedId?: string | null,
+  hasDetailPanel?: boolean,
   onMapClick?: (lat: number, lng: number) => void,
   onSelect?: (property: Property) => void
 }) {
   const [mounted, setMounted] = useState(false)
   const [isMoving, setIsMoving] = useState(false)
+  const handleFlyStart = React.useCallback(() => setIsMoving(true), [])
+  const handleFlyEnd = React.useCallback(() => setIsMoving(false), [])
 
   useEffect(() => {
     setMounted(true)
@@ -220,11 +244,11 @@ export default function MapComponent({
           url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
         />
 
-        <MapController center={searchLocation} />
+        <MapController flyTarget={flyTarget} hasDetailPanel={hasDetailPanel} onFlyStart={handleFlyStart} onFlyEnd={handleFlyEnd} />
         <CustomZoomControls onLocate={onMapClick} />
         <MapEvents setIsMoving={setIsMoving} onMapClick={onMapClick} />
 
-        {/* User Location Marker & Search Circle */}
+        {/* User Location Marker & Search Circle - hiện khi không đang bay và không ở chế độ tìm kiếm toàn hệ thống */}
         {!isMoving && !isSearchingAll && (
           <Circle
             center={searchLocation}
@@ -252,9 +276,10 @@ export default function MapComponent({
         {properties.map((property) => (
           property.latitude && property.longitude && (
             <Marker 
-              key={property.id} 
+              key={`${property.id}-${property.id === highlightedId}`} 
               position={[property.latitude, property.longitude]}
-              icon={createPriceIcon(property.price)}
+              icon={createPriceIcon(property.price, property.id === highlightedId)}
+              zIndexOffset={property.id === highlightedId ? 1000 : 0}
               eventHandlers={{
                 click: () => {
                   if (onSelect) onSelect(property)

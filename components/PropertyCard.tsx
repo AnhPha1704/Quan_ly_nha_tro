@@ -50,7 +50,7 @@ export default function PropertyCard({ property, isCompact, isSelected, onClick 
           </h3>
           <div className="flex flex-col items-end flex-shrink-0">
             <span className="text-sm font-black text-dark leading-none">
-              {property.price / 1000000} Tr
+              {formattedPrice}
             </span>
           </div>
         </div>

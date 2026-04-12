@@ -32,6 +32,7 @@ export default function Home() {
   const [maxPrice, setMaxPrice] = useState<number | undefined>(undefined)
   const [selectedType, setSelectedType] = useState<string | undefined>(undefined)
   const [selectedProperty, setSelectedProperty] = useState<any | null>(null)
+  const [flyTarget, setFlyTarget] = useState<[number, number] | null>(null)
   const filterScrollRef = React.useRef<HTMLDivElement>(null)
   const isDragging = React.useRef(false)
   const startX = React.useRef(0)
@@ -46,6 +47,7 @@ export default function Home() {
         const coords: [number, number] = [position.coords.latitude, position.coords.longitude]
         setUserLocation(coords)
         setSearchLocation(coords)
+        setFlyTarget(coords) // Bay đến vị trí thực của người dùng khi mở web
         setIsLocatingGps(false)
       }, (error) => {
         console.warn("Geolocation Error:", error.message)
@@ -118,10 +120,22 @@ export default function Home() {
             properties={properties} 
             userLocation={userLocation} 
             searchLocation={searchLocation}
+            flyTarget={flyTarget}
             radius={radius * 1000} 
             isSearchingAll={isSearchingAll}
-            onMapClick={(lat, lng) => setSearchLocation([lat, lng])}
-            onSelect={(p) => setSelectedProperty(p)}
+            highlightedId={selectedProperty?.id}
+            hasDetailPanel={!!selectedProperty}
+            onMapClick={(lat, lng) => {
+              setFlyTarget(null) // reset flyTarget khi click bản đồ để không bay
+              setSearchLocation([lat, lng])
+            }}
+            onSelect={(p) => {
+              setSelectedProperty(p)
+              if (p.latitude && p.longitude) {
+                setSearchLocation([p.latitude, p.longitude])
+                setFlyTarget([p.latitude, p.longitude])
+              }
+            }}
           />
         </div>
 
@@ -222,7 +236,13 @@ export default function Home() {
                 properties={properties} 
                 loading={loading} 
                 locationName={currentLocationName}
-                onSelect={(p) => setSelectedProperty(p)}
+                onSelect={(p) => {
+                  setSelectedProperty(p)
+                  if (p.latitude && p.longitude) {
+                    setSearchLocation([p.latitude, p.longitude])
+                    setFlyTarget([p.latitude, p.longitude])
+                  }
+                }}
                 selectedId={selectedProperty?.id}
                 isCompact={true}
               />
