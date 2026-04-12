@@ -28,7 +28,14 @@ export default function Home() {
   const [searchLocation, setSearchLocation] = useState<[number, number]>([16.0471, 108.2062]) 
   const [currentLocationName, setCurrentLocationName] = useState('Đà Nẵng') // Real-time location name
   const [radius, setRadius] = useState(5) 
+  const [minPrice, setMinPrice] = useState<number | undefined>(undefined)
+  const [maxPrice, setMaxPrice] = useState<number | undefined>(undefined)
+  const [selectedType, setSelectedType] = useState<string | undefined>(undefined)
   const [selectedProperty, setSelectedProperty] = useState<any | null>(null)
+  const filterScrollRef = React.useRef<HTMLDivElement>(null)
+  const isDragging = React.useRef(false)
+  const startX = React.useRef(0)
+  const scrollLeft = React.useRef(0)
 
   const isSearchingAll = isSearchFocused || searchQuery.length > 0
 
@@ -84,6 +91,11 @@ export default function Home() {
           url += `&lat=${searchLocation[0]}&lng=${searchLocation[1]}&radius=${radius}`
         }
 
+        // Thêm các tham số lọc vào URL
+        if (minPrice) url += `&minPrice=${minPrice}`
+        if (maxPrice) url += `&maxPrice=${maxPrice}`
+        if (selectedType) url += `&type=${selectedType}`
+
         const res = await fetch(url)
         const data = await res.json()
         setProperties(Array.isArray(data) ? data : [])
@@ -95,7 +107,7 @@ export default function Home() {
     }
 
     fetchProperties()
-  }, [searchLocation, radius, searchQuery, isLocatingGps, isSearchingAll])
+  }, [searchLocation, radius, searchQuery, isLocatingGps, isSearchingAll, minPrice, maxPrice, selectedType])
 
   return (
     <main className="main-layout font-sans">
@@ -140,16 +152,67 @@ export default function Home() {
                 />
               </div>
 
-              <div className="flex gap-2 mt-4 overflow-x-auto pb-1 no-scrollbar">
-                 <div className="flex-shrink-0 flex items-center gap-2 px-4 py-2 bg-dark text-primary rounded-full text-[10px] font-black uppercase tracking-widest cursor-pointer shadow-lg">
-                   Gần tôi
-                 </div>
-                 <div className="flex-shrink-0 flex items-center gap-2 px-4 py-2 bg-white border border-slate-100 text-slate-400 rounded-full text-[10px] font-black uppercase tracking-widest cursor-pointer hover:border-slate-300 transition-colors">
+              <div 
+                ref={filterScrollRef}
+                onMouseDown={(e) => {
+                  isDragging.current = true
+                  startX.current = e.pageX - (filterScrollRef.current?.offsetLeft || 0)
+                  scrollLeft.current = filterScrollRef.current?.scrollLeft || 0
+                }}
+                onMouseLeave={() => isDragging.current = false}
+                onMouseUp={() => isDragging.current = false}
+                onMouseMove={(e) => {
+                  if (!isDragging.current) return
+                  e.preventDefault()
+                  const x = e.pageX - (filterScrollRef.current?.offsetLeft || 0)
+                  const walk = (x - startX.current) * 2 // Tốc độ trượt
+                  if (filterScrollRef.current) {
+                    filterScrollRef.current.scrollLeft = scrollLeft.current - walk
+                  }
+                }}
+                className="flex gap-2 mt-4 overflow-x-auto pb-1 no-scrollbar cursor-grab active:cursor-grabbing select-none"
+              >
+                 <button 
+                  onClick={() => {
+                    setSearchQuery('')
+                    setMinPrice(undefined)
+                    setMaxPrice(undefined)
+                    setSelectedType(undefined)
+                    setRadius(5)
+                  }}
+                  className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest cursor-pointer transition-all ${
+                    !maxPrice && !selectedType && searchQuery === '' ? 'bg-dark text-primary shadow-lg' : 'bg-white border border-slate-100 text-slate-400 hover:border-slate-300'
+                  }`}
+                 >
+                    Gần tôi
+                 </button>
+                 <button 
+                  onClick={() => {
+                    setMaxPrice(maxPrice === 3000000 ? undefined : 3000000)
+                    setMinPrice(undefined)
+                  }}
+                  className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest cursor-pointer transition-all ${
+                    maxPrice === 3000000 ? 'bg-dark text-primary shadow-lg' : 'bg-white border border-slate-100 text-slate-400 hover:border-slate-300'
+                  }`}
+                 >
                    Giá rẻ
-                 </div>
-                 <div className="flex-shrink-0 flex items-center gap-2 px-4 py-2 bg-white border border-slate-100 text-slate-400 rounded-full text-[10px] font-black uppercase tracking-widest cursor-pointer hover:border-slate-300 transition-colors">
-                   Phòng mới
-                 </div>
+                 </button>
+                 <button 
+                  onClick={() => setSelectedType(selectedType === 'ROOM' ? undefined : 'ROOM')}
+                  className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest cursor-pointer transition-all ${
+                    selectedType === 'ROOM' ? 'bg-dark text-primary shadow-lg' : 'bg-white border border-slate-100 text-slate-400 hover:border-slate-300'
+                  }`}
+                 >
+                   Phòng trọ
+                 </button>
+                 <button 
+                  onClick={() => setSelectedType(selectedType === 'HOUSE' ? undefined : 'HOUSE')}
+                  className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest cursor-pointer transition-all ${
+                    selectedType === 'HOUSE' ? 'bg-dark text-primary shadow-lg' : 'bg-white border border-slate-100 text-slate-400 hover:border-slate-300'
+                  }`}
+                 >
+                   Nhà nguyên căn
+                 </button>
               </div>
             </header>
 

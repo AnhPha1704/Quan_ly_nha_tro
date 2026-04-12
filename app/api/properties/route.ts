@@ -18,6 +18,10 @@ export async function GET(request: Request) {
       const longitude = parseFloat(lng)
       const r = radius ? parseFloat(radius) : 5
       const searchPattern = q ? `%${q}%` : null
+      
+      const priceMin = minPrice ? parseFloat(minPrice) : 0
+      const priceMax = maxPrice ? parseFloat(maxPrice) : 999999999
+      const propType = type || null
 
       const properties = await prisma.$queryRaw`
         SELECT p.*, 
@@ -28,6 +32,8 @@ export async function GET(request: Request) {
         JOIN "User" u ON p."landlordId" = u.id
         WHERE (6371 * acos(cos(radians(${latitude})) * cos(radians(p.latitude)) * cos(radians(p.longitude) - radians(${longitude})) + sin(radians(${latitude})) * sin(radians(p.latitude)))) <= ${r}
         AND (${searchPattern}::text IS NULL OR p.title ILIKE ${searchPattern} OR p.description ILIKE ${searchPattern} OR p.address ILIKE ${searchPattern})
+        AND (p.price >= ${priceMin} AND p.price <= ${priceMax})
+        AND (${propType}::text IS NULL OR p.type::text = ${propType})
         ORDER BY p."createdAt" DESC
       `
 
