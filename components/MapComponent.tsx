@@ -83,8 +83,16 @@ function MapController({ center }: { center: [number, number] }) {
 function CustomZoomControls({ onLocate }: { onLocate?: (lat: number, lng: number) => void }) {
   const map = useMap()
   const [isLocating, setIsLocating] = useState(false)
+  const containerRef = React.useRef<HTMLDivElement>(null)
 
-  const handleLocate = () => {
+  useEffect(() => {
+    if (containerRef.current) {
+      L.DomEvent.disableClickPropagation(containerRef.current)
+    }
+  }, [])
+
+  const handleLocate = (e: React.MouseEvent) => {
+    e.stopPropagation()
     if ("geolocation" in navigator) {
       setIsLocating(true)
       navigator.geolocation.getCurrentPosition((position) => {
@@ -115,7 +123,7 @@ function CustomZoomControls({ onLocate }: { onLocate?: (lat: number, lng: number
   }
 
   return (
-    <div className="absolute bottom-10 right-10 z-[1000] flex flex-col gap-3">
+    <div ref={containerRef} className="absolute bottom-10 right-10 z-[1000] flex flex-col gap-3">
       <button
         onClick={handleLocate}
         disabled={isLocating}
@@ -134,7 +142,10 @@ function CustomZoomControls({ onLocate }: { onLocate?: (lat: number, lng: number
 
       <div className="flex flex-col gap-1 bg-white rounded-2xl p-1 shadow-xl border border-slate-100 overflow-hidden">
         <button
-          onClick={() => map.zoomIn()}
+          onClick={(e) => {
+            e.stopPropagation()
+            map.zoomIn()
+          }}
           className="w-10 h-10 bg-white hover:bg-slate-50 rounded-xl flex items-center justify-center text-dark transition-all active:scale-90 font-black text-lg"
           title="Phóng to"
         >
@@ -142,7 +153,10 @@ function CustomZoomControls({ onLocate }: { onLocate?: (lat: number, lng: number
         </button>
         <div className="h-[1px] bg-slate-100 mx-2" />
         <button
-          onClick={() => map.zoomOut()}
+          onClick={(e) => {
+            e.stopPropagation()
+            map.zoomOut()
+          }}
           className="w-10 h-10 bg-white hover:bg-slate-50 rounded-xl flex items-center justify-center text-dark transition-all active:scale-90 font-black text-lg"
           title="Thu nhỏ"
         >
@@ -171,6 +185,7 @@ export default function MapComponent({
   userLocation,
   searchLocation,
   radius = 5000,
+  isSearchingAll = false,
   onMapClick,
   onSelect
 }: {
@@ -178,6 +193,7 @@ export default function MapComponent({
   userLocation: [number, number],
   searchLocation: [number, number],
   radius?: number,
+  isSearchingAll?: boolean,
   onMapClick?: (lat: number, lng: number) => void,
   onSelect?: (property: Property) => void
 }) {
@@ -209,7 +225,7 @@ export default function MapComponent({
         <MapEvents setIsMoving={setIsMoving} onMapClick={onMapClick} />
 
         {/* User Location Marker & Search Circle */}
-        {!isMoving && (
+        {!isMoving && !isSearchingAll && (
           <Circle
             center={searchLocation}
             radius={radius}
@@ -261,10 +277,12 @@ export default function MapComponent({
       {/* Floating Info Overlay */}
       <div className="absolute bottom-10 left-10 z-20 glass p-4 rounded-3xl min-w-[200px] border-white/30 shadow-xl">
         <div className="flex items-center gap-2 mb-2">
-          <div className="w-3 h-3 bg-primary rounded-full animate-pulse" />
-          <span className="text-xs font-bold text-dark uppercase tracking-wider">Đang xem khu vực</span>
+          <div className={`w-3 h-3 ${isSearchingAll ? 'bg-blue-500' : 'bg-primary'} rounded-full animate-pulse`} />
+          <span className="text-xs font-bold text-dark uppercase tracking-wider">
+            {isSearchingAll ? 'Đang tìm kiếm toàn hệ thống' : 'Đang xem khu vực'}
+          </span>
         </div>
-        <p className="text-sm text-slate-500">Hiển thị {properties.length} phòng trọ lân cận</p>
+        <p className="text-sm text-slate-500">Hiển thị {properties.length} phòng trọ {isSearchingAll ? '' : 'lân cận'}</p>
       </div>
     </div>
   )

@@ -23,11 +23,14 @@ export default function Home() {
   const [loading, setLoading] = useState(true)
   const [isLocatingGps, setIsLocatingGps] = useState(true) 
   const [searchQuery, setSearchQuery] = useState('')
+  const [isSearchFocused, setIsSearchFocused] = useState(false)
   const [userLocation, setUserLocation] = useState<[number, number]>([16.0471, 108.2062]) 
   const [searchLocation, setSearchLocation] = useState<[number, number]>([16.0471, 108.2062]) 
   const [currentLocationName, setCurrentLocationName] = useState('Đà Nẵng') // Real-time location name
   const [radius, setRadius] = useState(5) 
   const [selectedProperty, setSelectedProperty] = useState<any | null>(null)
+
+  const isSearchingAll = isSearchFocused || searchQuery.length > 0
 
   // 1. Get User Location First
   useEffect(() => {
@@ -74,7 +77,13 @@ export default function Home() {
     const fetchProperties = async () => {
       setLoading(true)
       try {
-        const url = `/api/properties?lat=${searchLocation[0]}&lng=${searchLocation[1]}&radius=${radius}&q=${searchQuery}`
+        let url = `/api/properties?q=${searchQuery}`
+        
+        // Chỉ thêm GPS filter nếu không ở chế độ tìm kiếm toàn hệ thống
+        if (!isSearchingAll) {
+          url += `&lat=${searchLocation[0]}&lng=${searchLocation[1]}&radius=${radius}`
+        }
+
         const res = await fetch(url)
         const data = await res.json()
         setProperties(Array.isArray(data) ? data : [])
@@ -86,12 +95,10 @@ export default function Home() {
     }
 
     fetchProperties()
-  }, [searchLocation, radius, searchQuery, isLocatingGps])
+  }, [searchLocation, radius, searchQuery, isLocatingGps, isSearchingAll])
 
   return (
     <main className="main-layout font-sans">
-      <Sidebar />
-
       <div className="flex-grow relative overflow-hidden">
         {/* Map Background */}
         <div className="absolute inset-0 z-0">
@@ -100,6 +107,7 @@ export default function Home() {
             userLocation={userLocation} 
             searchLocation={searchLocation}
             radius={radius * 1000} 
+            isSearchingAll={isSearchingAll}
             onMapClick={(lat, lng) => setSearchLocation([lat, lng])}
             onSelect={(p) => setSelectedProperty(p)}
           />
@@ -123,6 +131,11 @@ export default function Home() {
                   placeholder="Tìm khu vực, tên phòng..." 
                   className="w-full h-12 pl-12 pr-4 bg-slate-50 border-2 border-transparent focus:border-primary/20 rounded-2xl outline-none font-bold text-dark placeholder:text-slate-300 transition-all text-sm"
                   value={searchQuery}
+                  onFocus={() => setIsSearchFocused(true)}
+                  onBlur={() => {
+                    // Trì hoãn một chút để cho phép click vào kết quả nếu cần
+                    setTimeout(() => setIsSearchFocused(false), 200)
+                  }}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
