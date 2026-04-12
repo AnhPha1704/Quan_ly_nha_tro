@@ -9,7 +9,9 @@ import {
   ChatBubbleBottomCenterTextIcon,
   CheckBadgeIcon,
   ShieldCheckIcon,
-  CameraIcon
+  CameraIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon
 } from '@heroicons/react/24/outline'
 
 interface Property {
@@ -32,6 +34,18 @@ interface PropertyDetailProps {
 }
 
 export default function PropertyDetail({ property, onClose }: PropertyDetailProps) {
+  const [activeIndex, setActiveIndex] = React.useState(0)
+  
+  const nextImage = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setActiveIndex((prev) => (prev + 1) % property.images.length)
+  }
+
+  const prevImage = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setActiveIndex((prev) => (prev - 1 + property.images.length) % property.images.length)
+  }
+
   const formattedPrice = new Intl.NumberFormat('vi-VN', { 
     style: 'currency', 
     currency: 'VND' 
@@ -54,15 +68,49 @@ export default function PropertyDetail({ property, onClose }: PropertyDetailProp
         {/* Image Gallery */}
         <div className="px-6 mt-6">
           <div className="relative group rounded-3xl overflow-hidden aspect-[16/10] bg-slate-100 shadow-2xl">
+            {/* Main Image */}
             <img 
-              src={property.images[0]?.url || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&q=80&w=1000'} 
-              className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
+              src={property.images[activeIndex]?.url || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&q=80&w=1000'} 
+              className="w-full h-full object-cover transition-all duration-500"
               alt={property.title}
             />
+
+            {/* Navigation Buttons */}
+            {property.images.length > 1 && (
+              <>
+                <div className="absolute inset-0 flex items-center justify-between px-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button 
+                    onClick={prevImage}
+                    className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/40 transition-all active:scale-90"
+                  >
+                    <ChevronLeftIcon className="h-6 w-6" />
+                  </button>
+                  <button 
+                    onClick={nextImage}
+                    className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/40 transition-all active:scale-90"
+                  >
+                    <ChevronRightIcon className="h-6 w-6" />
+                  </button>
+                </div>
+
+                {/* Indicators (Instagram style bars) */}
+                <div className="absolute top-4 left-6 right-6 flex gap-1.5 z-20">
+                  {property.images.map((_, idx) => (
+                    <div 
+                      key={idx}
+                      className={`h-1 flex-grow rounded-full transition-all duration-300 ${
+                        idx === activeIndex ? 'bg-white' : 'bg-white/30'
+                      }`}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+
             <div className="absolute bottom-6 left-6 flex gap-2">
                <div className="px-4 py-2 bg-white/90 backdrop-blur-md rounded-2xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-dark shadow-lg">
                  <CameraIcon className="h-4 w-4 text-primary" />
-                 {property.images.length} Ảnh
+                 {activeIndex + 1} / {property.images.length}
                </div>
                <div className="px-4 py-2 bg-dark/95 backdrop-blur-md rounded-2xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-primary shadow-lg border border-white/10">
                  {property.type === 'ROOM' ? 'Phòng trọ' : 'Nhà nguyên căn'}
